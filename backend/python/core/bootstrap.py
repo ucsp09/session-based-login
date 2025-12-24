@@ -3,10 +3,12 @@ from adapters.db.json_file_db import JsonFileDB
 from adapters.session_store.base_session_store import BaseSessionStore
 from adapters.session_store.json_file_session_store import JsonFileSessionStore
 from config.constants import DB_TYPE, SESSION_STORE_TYPE
+from fastapi import Depends
+from dao.user_dao import UserDao
 
+# ---- Module-level variables ----
 _db: BaseDB | None = None
 _session_store: BaseSessionStore | None = None
-
 
 # ---- Factories ----
 def _create_db() -> BaseDB:
@@ -33,6 +35,10 @@ def get_session_store() -> BaseSessionStore:
     """Get the initialized Session Store instance."""
     global _session_store
     return _session_store
+
+def get_user_dao(db: BaseDB = Depends(get_db)) -> UserDao:
+    """Get an instance of UserDao with the provided DB dependency."""
+    return UserDao(db)
 
 # ---- Initialization and Cleanup ----
 async def startup_event_handler():

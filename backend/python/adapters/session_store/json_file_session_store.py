@@ -22,7 +22,7 @@ class JsonFileSessionStore(BaseSessionStore):
         async with AIOFile(SESSION_STORE_JSON_FILE_PATH, 'w') as afp:
             await afp.write(json.dumps(sessions, indent=4))
 
-    async def upsert_session(self, session_id: str, data: dict) -> None:
+    async def create_session(self, session_id: str, data: dict) -> None:
         existing_sessions = await self._read_sessions_from_file()
         existing_sessions[session_id] = data
         await self._write_sessions_to_file(existing_sessions)

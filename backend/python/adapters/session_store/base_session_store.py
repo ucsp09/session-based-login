@@ -12,8 +12,8 @@ class BaseSessionStore(ABC):
         pass
 
     @abstractmethod
-    async def insert_session(self, session_id: str, data: dict) -> None:
-        """Insert a new session into the session store."""
+    async def create_session(self, session_id: str, data: dict) -> None:
+        """Creates a new session into the session store."""
         pass
 
     @abstractmethod

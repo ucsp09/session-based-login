@@ -10,12 +10,12 @@ class UpdateUserRequestSchema(BaseModel):
     role: str | None = None
 
 class CreateUserResponseSchema(BaseModel):
-    user_id: str
+    userId: str
     username: str
     role: str
 
 class GetUserResponseSchema(BaseModel):
-    user_id: str
+    userId: str
     username: str
     role: str
 

@@ -1,29 +1,30 @@
-from fastapi import APIRouter, Response, status
+from fastapi import APIRouter, Response, status, Depends
 from schema.user_schema import CreateUserRequestSchema, UpdateUserRequestSchema, CreateUserResponseSchema, GetUserResponseSchema, GetAllUsersResponseSchema
 from schema.common_schema import ErrorResponseSchema
-from utils import user_utils
+from utils import user_utils, uuid_utils
 from dao.user_dao import UserDao
+from core.bootstrap import get_user_dao
 
 user_api_router = APIRouter()
 
 @user_api_router.get("/users/{user_id}")
-async def get_user(user_id: str, response: Response):
+async def get_user(user_id: str, response: Response, user_dao: UserDao = Depends(get_user_dao)):
     if not user_id:
         response.status_code = status.HTTP_400_BAD_REQUEST
         return ErrorResponseSchema(message="User ID is required.")
-    if not UserDao.user_exists(user_id):
+    if not user_dao.user_exists(user_id):
         response.status_code = status.HTTP_404_NOT_FOUND
         return ErrorResponseSchema(message="User not found.")
-    user_data, err = await UserDao().get_user(user_id)
+    user_data, err = await user_dao.get_user(user_id)
     if err:
         response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
         return ErrorResponseSchema(message="Failed to retrieve user.")
     response.status_code = status.HTTP_200_OK
-    return GetUserResponseSchema(user_id=user_data["user_id"], username=user_data["username"], role=user_data["role"])
+    return GetUserResponseSchema(id=user_data["userId"], username=user_data["username"], role=user_data["role"])
 
 
 @user_api_router.post("/users")
-async def create_user(input_data: CreateUserRequestSchema, response: Response):
+async def create_user(input_data: CreateUserRequestSchema, response: Response, user_dao: UserDao = Depends(get_user_dao)):
     if not user_utils.is_valid_username(input_data.username):
         response.status_code = status.HTTP_400_BAD_REQUEST
         return ErrorResponseSchema(message="Invalid username format.")
@@ -33,23 +34,26 @@ async def create_user(input_data: CreateUserRequestSchema, response: Response):
     if not user_utils.is_built_in_role(input_data.role):
         response.status_code = status.HTTP_400_BAD_REQUEST
         return ErrorResponseSchema(message="Invalid role specified.")
-    if await UserDao().user_exists(input_data.username):
+    if await user_dao.user_exists(input_data.username):
         response.status_code = status.HTTP_409_CONFLICT
         return ErrorResponseSchema(message="Username already exists.")
-    user_id, err = await UserDao().create_user(input_data.dict())
+    user_data = input_data.dict()
+    user_data['id'] = uuid_utils.generate_uuid()
+    user_data['password'] = user_utils.get_hashed_password(input_data.password)
+    _, err = await user_dao.create_user(user_data=user_data)
     if err:
         response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
         return ErrorResponseSchema(message="Failed to create user.")
     response.status_code = status.HTTP_201_CREATED
-    return CreateUserResponseSchema(user_id=user_id, username=input_data.username, role=input_data.role)
+    return CreateUserResponseSchema(id=user_data['id'], username=input_data.username, role=input_data.role)
     
 
 @user_api_router.put("/users/{user_id}")
-async def update_user(user_id: str, input_data: UpdateUserRequestSchema, response: Response):
+async def update_user(user_id: str, input_data: UpdateUserRequestSchema, response: Response, user_dao: UserDao = Depends(get_user_dao)):
     if not user_id:
         response.status_code = status.HTTP_400_BAD_REQUEST
         return ErrorResponseSchema(message="User ID is required.")
-    if not await UserDao().user_exists(user_id):
+    if not await user_dao.user_exists(user_id):
         response.status_code = status.HTTP_404_NOT_FOUND
         return ErrorResponseSchema(message="User not found.")
     update_data = input_data.dict(exclude_unset=True)
@@ -59,30 +63,32 @@ async def update_user(user_id: str, input_data: UpdateUserRequestSchema, respons
     if "role" in update_data and not user_utils.is_built_in_role(update_data["role"]):
         response.status_code = status.HTTP_400_BAD_REQUEST
         return ErrorResponseSchema(message="Invalid role specified.")
-    updated_user_data, err = await UserDao().update_user(user_id, update_data)
+    if "password" in update_data:
+        update_data["password"] = user_utils.get_hashed_password(update_data["password"])
+    updated_user_data, err = await user_dao.update_user(user_id, update_data)
     if err:
         response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
         return ErrorResponseSchema(message="Failed to update user.")
     response.status_code = status.HTTP_200_OK
-    return GetUserResponseSchema(user_id=updated_user_data["user_id"], username=updated_user_data["username"], role=updated_user_data["role"])
+    return GetUserResponseSchema(id=updated_user_data["user_id"], username=updated_user_data["username"], role=updated_user_data["role"])
 
 @user_api_router.delete("/users/{user_id}")
-async def delete_user(user_id: str, response: Response):
+async def delete_user(user_id: str, response: Response, user_dao: UserDao = Depends(get_user_dao)):
     if not user_id:
         response.status_code = status.HTTP_400_BAD_REQUEST
         return ErrorResponseSchema(message="User ID is required.")
-    if not await UserDao().user_exists(user_id):
+    if not await user_dao.user_exists(user_id):
         response.status_code = status.HTTP_404_NOT_FOUND
         return ErrorResponseSchema(message="User not found.")
-    success, err = await UserDao().delete_user(user_id)
+    success, err = await user_dao.delete_user(user_id)
     if err or not success:
         response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
         return ErrorResponseSchema(message="Failed to delete user.")
     response.status_code = status.HTTP_204_NO_CONTENT
 
 @user_api_router.get("/users")
-async def get_all_users(response: Response):
-    users, err = await UserDao().get_all_users()
+async def get_all_users(response: Response, user_dao: UserDao = Depends(get_user_dao)):
+    users, err = await user_dao.get_all_users()
     if err:
         response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
         return ErrorResponseSchema(message="Failed to retrieve users.")

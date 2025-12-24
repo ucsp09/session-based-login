@@ -32,6 +32,7 @@ class JsonFileDB(BaseDB):
             records = []
         records.append(data)
         await self._write_json_content_to_file(collection_file_path, {"records": records})
+        return data
     
     async def get_all_records(self, collection: str) -> list[dict]:
         """Retrieve all records from the specified collection."""
