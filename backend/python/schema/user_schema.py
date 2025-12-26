@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from typing import Optional, List
 
 class CreateUserRequestSchema(BaseModel):
     username: str
@@ -6,8 +7,8 @@ class CreateUserRequestSchema(BaseModel):
     role: str
 
 class UpdateUserRequestSchema(BaseModel):
-    password: str | None = None
-    role: str | None = None
+    password: Optional[str] = None
+    role: Optional[str] = None
 
 class CreateUserResponseSchema(BaseModel):
     userId: str
@@ -20,6 +21,6 @@ class GetUserResponseSchema(BaseModel):
     role: str
 
 class GetAllUsersResponseSchema(BaseModel):
-    items: list[GetUserResponseSchema]
+    items: List[GetUserResponseSchema]
     total: int
 

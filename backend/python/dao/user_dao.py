@@ -1,5 +1,8 @@
 from typing import Any, Tuple, List, Dict, Optional
-from adapters.db.base_db import BaseDB
+from core.adapters.db.base_db import BaseDB
+from core.logger import Logger
+
+logger = Logger.get_logger(__name__)
 
 class UserDao:
     def __init__(self, db: BaseDB):
@@ -7,69 +10,83 @@ class UserDao:
         self.collection = "users"
 
     async def create_user(self, user_data: dict) -> Tuple[Optional[Dict], Any]:
-        # Logic to create a user in the database
+        """Create a user in the database."""
         try:
+            logger.info(f"Creating user with data: {user_data}")
             user = await self.db.create_record(self.collection, user_data)
+            logger.info(f"User created successfully with ID: {user.get('id')}")
             return user, None
         except Exception as e:
+            logger.error(f"Error creating user: {e}")
             return None, e
 
     async def get_user(self, user_id: str) -> Tuple[Optional[Dict], Any]:
-        # Logic to retrieve a user from the database
+        """Retrieve a user by ID from the database."""
         try:
+            logger.info(f"Retrieving user with ID: {user_id}")
             user = await self.db.get_record_by_id(self.collection, user_id)
             if user:
+                logger.info(f"User retrieved successfully with ID: {user_id}")
                 return user, None
             else:
-                return None, "User not found"
+                logger.warning(f"User not found with ID: {user_id}")
+                return None, None
         except Exception as e:
+            logger.error(f"Error retrieving user with ID: {user_id}. Error: {e}")
             return None, e
 
     async def update_user(self, user_id: str, update_data: dict) -> Tuple[Optional[Dict], Any]:
-        # Logic to update a user in the database
+        """Update a user in the database."""
         try:
+            logger.info(f"Updating user with ID: {user_id} with data: {update_data}")
             updated_user = await self.db.update_record(self.collection, user_id, update_data)
             if updated_user:
+                logger.info(f"User updated successfully with ID: {user_id}")
                 return updated_user, None
             else:
+                logger.warning(f"User not found with ID: {user_id}")
                 return None, "User not found"
         except Exception as e:
+            logger.error(f"Error updating user with ID: {user_id}. Error: {e}")
             return None, e
 
     async def delete_user(self, user_id: str) -> Tuple[bool, Any]:
-        # Logic to delete a user from the database
+        """Delete a user from the database."""
         try:
+            logger.info(f"Deleting user with ID: {user_id}")
             success = await self.db.delete_record(self.collection, user_id)
-            return success, None
+            if success:
+                logger.info(f"User deleted successfully with ID: {user_id}")
+                return True, None
+            else:
+                logger.warning(f"User not found with ID: {user_id}")
+                return False, "User not found"
         except Exception as e:
+            logger.error(f"Error deleting user with ID: {user_id}. Error: {e}")
             return False, e
 
     async def get_all_users(self) -> Tuple[List[Dict], Any]:
-        # Logic to retrieve all users from the database
+        """Retrieve all users from the database."""
         try:
+            logger.info("Retrieving all users")
             users = await self.db.get_all_records(self.collection)
+            logger.info(f"Successfully retrieved {len(users)} users")
             return users, None
         except Exception as e:
+            logger.error(f"Error retrieving all users. Error: {e}")
             return [], e
 
-    async def user_exists(self, username: str) -> Tuple[bool, Any]:
-        # Logic to check if a user exists in the database
-        try:
-            users = await self.db.get_all_records(self.collection)
-            for user in users:
-                if user.get("username") == username:
-                    return True, None
-            return False, None
-        except Exception as e:
-            return False, e
-
     async def get_user_by_username(self, username: str) -> Tuple[Optional[Dict], Any]:
-        # Logic to retrieve a user by username from the database
+        """Retrieve a user by username from the database."""
         try:
+            logger.info(f"Retrieving user with username: {username}")
             users = await self.db.get_all_records(self.collection)
             for user in users:
                 if user.get("username") == username:
+                    logger.info(f"User retrieved successfully with username: {username}")
                     return user, None
-            return None, "User not found"
+            logger.warning(f"User not found with username: {username}")
+            return None, None
         except Exception as e:
+            logger.error(f"Error retrieving user with username: {username}. Error: {e}")
             return None, e
