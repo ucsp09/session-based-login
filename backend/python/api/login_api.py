@@ -1,14 +1,12 @@
 from fastapi import APIRouter, Response, Request, status, Depends
 from schema.common_schema import ErrorResponseSchema
-from schema.login_schema import LoginRequestSchema, LoginResponseSchema, LogoutResponseSchema
+from schema.login_schema import LoginRequestSchema, LoginResponseSchema, LogoutResponseSchema, LoginStatusResponseSchema
 from utils import user_utils, uuid_utils, session_utils
 from dao.user_dao import UserDao
 from core.bootstrap import get_session_store, get_user_dao
 from core.adapters.session_store.base_session_store import BaseSessionStore
 from core.logger import Logger
 from config.constants import SESSION_EXPIRY_SECONDS
-from datetime import datetime, timedelta
-
 login_api_router = APIRouter()
 logger = Logger.get_logger(__name__)
 
@@ -91,6 +89,41 @@ async def login(input_data: LoginRequestSchema, request: Request, response: Resp
         logger.exception(f"Unexpected error during login: {str(e)}")
         response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
         return ErrorResponseSchema(error="An unexpected error occurred during login.")
+
+@login_api_router.get("/login/status")
+async def login_status(request: Request, response: Response, session_store: BaseSessionStore = Depends(get_session_store)):
+    try:
+        logger.info("Login status request received.")
+
+        # Check for session_id in cookies
+        session_id = request.cookies.get("session_id")
+        if not session_id:
+            logger.warning("No session_id found in cookies.")
+            response.status_code = status.HTTP_200_OK
+            return LoginStatusResponseSchema(is_logged_in=False)
+
+        logger.info(f"Checking session for session_id: {session_id}")
+        existing_session = await session_store.get_session(session_id)
+        if not existing_session:
+            logger.warning(f"No active session found for session_id: {session_id}")
+            response.status_code = status.HTTP_200_OK
+            return LoginStatusResponseSchema(is_logged_in=False)
+
+        # Validate session expiry
+        session_expires_at = existing_session.get('expires_at')
+        if not session_expires_at or not session_utils.is_session_valid(session_expires_at):
+            logger.info(f"Session has expired for session_id: {session_id}, deleting session.")
+            await session_store.delete_session(session_id)
+            response.status_code = status.HTTP_200_OK
+            return LoginStatusResponseSchema(is_logged_in=False)
+
+        logger.info(f"Active session found for session_id: {session_id}")
+        response.status_code = status.HTTP_200_OK
+        return LoginStatusResponseSchema(is_logged_in=True)
+    except Exception as e:
+        logger.exception(f"Unexpected error during login status check: {str(e)}")
+        response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        return ErrorResponseSchema(error="An unexpected error occurred while checking login status.")
 
 
 @login_api_router.get("/logout")

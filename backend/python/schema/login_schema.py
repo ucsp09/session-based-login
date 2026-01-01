@@ -7,5 +7,8 @@ class LoginRequestSchema(BaseModel):
 class LoginResponseSchema(BaseModel):
     message: str
 
+class LoginStatusResponseSchema(BaseModel):
+    is_logged_in: bool
+
 class LogoutResponseSchema(BaseModel):
     message: str
