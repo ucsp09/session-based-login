@@ -2,6 +2,7 @@ navbar = document.getElementById("navbar");
 navbar.innerHTML = `
     <a href="/ui/home">Home</a>
     <a href="/ui/about">About</a>
+    <a href="/ui/resource">Protected Resource</a>
     <button id="logoutButton">Logout</button>
 `;
 logoutButton = document.getElementById("logoutButton");
