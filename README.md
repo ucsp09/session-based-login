@@ -1,8 +1,16 @@
 # Session-Based-Auth-System
 
-This project consists of a backend API running on port 8000 and a frontend application running on port 3000. The backend exposes several endpoints to manage users and resources, as well as handle user authentication. The frontend allows users to log in, access protected resources, and log out.
+This project provides a clean and minimal implementation of session-based authentication using HTTP-only cookies. It closely mirrors how traditional web applications handle authentication and serves as a foundation for understanding modern authentication systems and their security trade-offs.
+
+## Project Scope and Intent
+This project is designed to demonstrate:
+1. How traditional session-based authentication works
+2. How browsers automatically attach cookies to requests
+3. Why validating a session alone does not prevent CSRF
+4. The historical and architectural limitations of cookie-based authentication
 
 ## Overview
+This project consists of a backend API running on port 8000 and a frontend application running on port 3000. The backend exposes several endpoints to manage users and resources, as well as handle user authentication. The frontend allows users to log in, access protected resources, and log out.
 
 - **Backend (Port 8000)**: Handles user management, authentication, and protected resources.
 - **Frontend (Port 3000)**: Provides a login interface and a navigation system that interacts with the backend.
@@ -142,15 +150,3 @@ python -m uvicorn main:app --host localhost --port 4000
 ```
 2. Login On the original frontend server at http://localhost:3000 and then click on csrf attack button on http://localhost:4000
 3. Logout on the original frontend server at http://localhost:3000 and then click on csrf attack button on http://localhost:4000
-
-## Project Scope and Intent
-This project is designed to demonstrate:
-1. How traditional session-based authentication works
-2. How browsers automatically attach cookies to requests
-3. Why validating a session alone does not prevent CSRF
-4. The historical and architectural limitations of cookie-based authentication
-
-## Summary
-
-This project provides a clean and minimal implementation of session-based authentication using HTTP-only cookies.
-It closely mirrors how traditional web applications handle authentication and serves as a foundation for understanding modern authentication systems and their security trade-offs.
